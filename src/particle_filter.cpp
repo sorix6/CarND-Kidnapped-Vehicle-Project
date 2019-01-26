@@ -57,7 +57,6 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
   
   is_initialized = true;
 
-  std::cout<<"initialized"<<is_initialized;
 }
 
 void ParticleFilter::prediction(double delta_t, double std_pos[], 
@@ -77,22 +76,20 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
   normal_distribution<double> dist_theta(0, std_pos[2]);
 
   for (int i = 0; i < num_particles; i++){
-    if (yaw_rate > 0.00001){
-      particles[i].x = velocity/yaw_rate * (sin(particles[i].theta + yaw_rate * delta_t) - sin(particles[i].theta));
-      particles[i].y = velocity/yaw_rate * (cos(particles[i].theta) - cos(particles[i].theta + yaw_rate * delta_t));
-      particles[i].theta = particles[i].theta + yaw_rate * delta_t;
+    if (fabs(yaw_rate) > 0.0001){
+      particles[i].x += (velocity / yaw_rate) * (sin(particles[i].theta + (yaw_rate * delta_t)) - sin(particles[i].theta));
+      particles[i].y += (velocity / yaw_rate) * (cos(particles[i].theta) - cos(particles[i].theta + (yaw_rate * delta_t)));
+      particles[i].theta += yaw_rate * delta_t;
     }
     else{
-      particles[i].x = velocity * delta_t * cos(particles[i].theta);
-      particles[i].y = velocity * delta_t * sin(particles[i].theta);
+      particles[i].x += velocity * delta_t * cos(particles[i].theta);
+      particles[i].y += velocity * delta_t * sin(particles[i].theta);
     }
 
     // Add random Gaussian noise
     particles[i].x += dist_x(gen);
     particles[i].y += dist_y(gen);
     particles[i].theta += dist_theta(gen);
-
-    std::cout << "Particle" << particles[i].x << std::endl;
   }  
 
 }
@@ -108,20 +105,18 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
    *   during the updateWeights phase.
    */
 
-  for (unsigned int i = 0; i < observations.size(); ++i) {
+  for (unsigned int i = 0; i < observations.size(); i++) {
     int closest_landmark = 0;
-    int min_dist = 999999;
-    int curr_dist;
+    double min_dist = std::numeric_limits<float>::max();
 
     // Iterate through all predicted landmarks to check which is closest
-    for (unsigned int j = 0; j < predicted.size(); ++j) {
+    for (unsigned int j = 0; j < predicted.size(); j++) {
       // Calculate Euclidean distance
-      curr_dist = sqrt(pow(predicted[i].x - observations[j].x, 2)
-                   + pow(predicted[i].y - observations[j].y, 2));
+      double curr_dist = dist(predicted[j].x, predicted[j].y, observations[i].x, observations[i].y);
       // Compare to min_dist and update if closest
       if (curr_dist < min_dist) {
         min_dist = curr_dist;
-        closest_landmark = j;
+        closest_landmark = predicted[j].id;
       }
     }
     
@@ -149,6 +144,19 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
   for (int i = 0; i < num_particles; i++){
 
+     // only interested in landmarks that are in the sensor range for the current particle
+    vector<LandmarkObs> landmarks;
+    for (unsigned int j = 0; j < map_landmarks.landmark_list.size(); j++){
+      float landmark_x =  map_landmarks.landmark_list[j].x_f;
+      float landmark_y =  map_landmarks.landmark_list[j].y_f;
+
+      double distance = dist(landmark_x, landmark_y, particles[i].x, particles[i].y);
+      if (distance <= sensor_range){
+        landmarks.push_back(LandmarkObs {map_landmarks.landmark_list[j].id_i, landmark_x, landmark_y});
+      }
+
+    }
+
     // transform observations from vehicle coordinates to map coordinates
     vector<LandmarkObs> mapObservations;
     for (unsigned int j = 0; j < observations.size(); j++){
@@ -158,18 +166,6 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
       observation.y = particles[i].y + (sin(particles[i].theta) * observations[j].x) + (cos(particles[i].theta) * observations[j].y); // transform to map y coordinate
       
       mapObservations.push_back(observation);
-    }
-
-    // only interested in landmarks that are in the sensor range for the current particle
-    vector<LandmarkObs> landmarks;
-    for (unsigned int j = 0; j < map_landmarks.landmark_list.size(); j++){
-      float landmark_x =  map_landmarks.landmark_list[j].x_f;
-      float landmark_y =  map_landmarks.landmark_list[j].y_f;
-
-      if (fabs(landmark_x - particles[i].x) < sensor_range && fabs(landmark_y - particles[i].y) < sensor_range){
-        landmarks.push_back(LandmarkObs {map_landmarks.landmark_list[j].id_i, landmark_x, landmark_y});
-      }
-
     }
 
     // associate the predicted measurement that is closest to each observed measurement
@@ -230,15 +226,20 @@ void ParticleFilter::resample() {
   vector<Particle> resampled;
 
   vector<double> weights;
+  double max_weight = std::numeric_limits<double>::min();
   for (int i = 0; i < num_particles; i++){
     weights.push_back(particles[i].weight);
+    if (particles[i].weight > max_weight){
+      max_weight = particles[i].weight;
+    }
   }
 
-  std::uniform_real_distribution<double> uniformRealDist(0, num_particles - 1);
-  int index = uniformRealDist(gen);
+  std::uniform_real_distribution<double> uniformRealDist(0, max_weight);
+  std::uniform_int_distribution<int> uniformIntDist(0, num_particles - 1);
+  int index = uniformIntDist(gen);
 
   double beta = 0.0;
-  double mw = *std::min_element(std::begin(weights), std::end(weights));
+  double mw = *std::max_element(std::begin(weights), std::end(weights));
 
   for (int i = 0; i < num_particles; i++){
     beta += uniformRealDist(gen) * 2.0 * mw;
