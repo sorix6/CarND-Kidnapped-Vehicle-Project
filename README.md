@@ -30,5 +30,4 @@ Once the implementation is correct, running the project with the Term 2 simulato
 
 | Simulator output | Console output |
 | --- | --- |
-| ![Your particle filter passed](https://raw.githubusercontent.com/sorix6/CarND-Kidnapped-Vehicle-Project/master/images/filter_pass.JPG) | 
-![Console output](https://raw.githubusercontent.com/sorix6/CarND-Kidnapped-Vehicle-Project/master/images/console.JPG) |
+| ![Your particle filter passed](https://raw.githubusercontent.com/sorix6/CarND-Kidnapped-Vehicle-Project/master/images/filter_pass.JPG) | ![Console output](https://raw.githubusercontent.com/sorix6/CarND-Kidnapped-Vehicle-Project/master/images/console.JPG) |
