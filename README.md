@@ -7,7 +7,8 @@ The purpose of the project is to implement a particle filter able to localize a 
 
 1. Initialization
 - A number of 100 particles has been chosen
-- All particles are initialized to the first position and weight 1 and random Gaussian noise is added to each particle
+- Initialize all particles to the first position and weight 1 
+- Add random Gaussian noise to each particle
 
 2. Prediction
 - Add measurements to each particle 
