@@ -3,7 +3,7 @@
 The purpose of the project is to implement a particle filter able to localize a vehicle position and yaw to within the values specified in a set of given parameters: `max_translation_error` and `max_yaw_error`.
 
 
-#### Project implementation steps
+### Project implementation steps
 
 1. Initialization
 - A number of 100 particles has been chosen
@@ -24,7 +24,7 @@ The purpose of the project is to implement a particle filter able to localize a 
 
 
 
-## Running the Code
+### Running the Code
 
 Once the implementation is correct, running the project with the Term 2 simulator produces the following outputs:
 
